@@ -5,22 +5,11 @@ export interface SlackMessage {
 }
 
 export const fetchSlackMessages = async (channelId: string): Promise<SlackMessage[]> => {
-    const token = import.meta.env.VITE_SLACK_TOKEN;
-    if (!token) throw new Error('Slack token not found');
+    // We now use a serverless function proxy to avoid CORS issues in the browser
+    const response = await fetch(`/api/sync-slack?channelId=${channelId}`);
 
-    try {
-        const response = await fetch(`https://slack.com/api/conversations.history?channel=${channelId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
+    const data = await response.json();
+    if (!data.ok) throw new Error(data.error || 'Failed to fetch Slack messages');
 
-        const data = await response.json();
-        if (!data.ok) throw new Error(data.error || 'Failed to fetch Slack messages');
-
-        return data.messages;
-    } catch (error) {
-        console.error('Slack Fetch Error:', error);
-        throw error;
-    }
+    return data.messages;
 };
