@@ -288,7 +288,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeSection }) => {
                                             <h4 className="font-bold text-white text-lg  tracking-tight">{app.name}</h4>
                                             <p className="text-xs text-zinc-500 mt-1  tracking-tighter opacity-70">{app.desc}</p>
                                         </div>
-                                        {app.isSlack && app.status === "Connected" && (
+                                        {app.isSlack && (
                                             <div className="pt-4 border-t border-zinc-900 flex flex-col gap-3">
                                                 <div className="space-y-1">
                                                     <label className="text-[9px] font-bold text-zinc-600 uppercase">Channel ID</label>
