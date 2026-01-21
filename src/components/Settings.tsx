@@ -6,7 +6,6 @@ import {
     Cpu,
     Webhook,
     ShieldCheck,
-    Palette,
     Image as ImageIcon,
     History,
 
@@ -162,7 +161,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeSection }) => {
 
                                             if (error) {
                                                 console.error('Error uploading:', error);
-                                                alert('Upload failed. Make sure you have a "SwipeDeck-files" bucket in Supabase and your credentials are correct.');
+                                                alert(`Upload failed: ${error.message}. \n\nCheck if you RESTARTED your 'npm run dev' after adding .env file.`);
                                             } else {
                                                 window.location.reload();
                                             }
@@ -197,7 +196,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeSection }) => {
 
                                             if (error) {
                                                 console.error('Error uploading:', error);
-                                                alert('Upload failed. Check Supabase credentials and bucket existence.');
+                                                alert(`Upload failed: ${error.message}. \n\nCheck if you RESTARTED your 'npm run dev' after adding .env file.`);
                                             } else {
                                                 window.location.reload();
                                             }

@@ -9,7 +9,6 @@ import {
     Bell,
     ChevronLeft,
     Database,
-    Trophy,
     Flame,
     Star,
     Workflow,
@@ -58,7 +57,7 @@ export const DashboardLayout: React.FC<{
     xp?: number,
     streak?: number
 }> = ({ children, activeTab, onTabChange, settingsSection, onSettingsSectionChange, xp = 1450, streak = 5 }) => {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [, setIsMobileMenuOpen] = useState(false);
     const [showGamification, setShowGamification] = useState(true);
     const [isHoveringGami, setIsHoveringGami] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
