@@ -33,6 +33,18 @@ export const SwipeDeck: React.FC<SwipeDeckProps> = ({
     }, [cards, activeFilter]);
 
     useEffect(() => {
+        const synced = JSON.parse(localStorage.getItem('synced_feedback') || '[]');
+        if (synced.length > 0) {
+            // Combine mock feedback with synced feedback, filtering out duplicates by ID
+            setCards(prev => {
+                const existingIds = new Set(prev.map(c => c.id));
+                const uniqueSynced = synced.filter((s: FeedbackCard) => !existingIds.has(s.id));
+                return [...uniqueSynced, ...prev];
+            });
+        }
+    }, []);
+
+    useEffect(() => {
         const timer = setTimeout(() => {
             setHintActive(true);
             setTimeout(() => setHintActive(false), 2000);

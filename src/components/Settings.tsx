@@ -20,10 +20,12 @@ import {
     FileText,
     Upload,
     File,
-    Trash2
+    Trash2,
+    Slack
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
+import { fetchSlackMessages } from '../lib/slack';
 
 interface SettingsProps {
     activeSection: 'knowledge' | 'integrations' | 'whitelabel' | 'security' | 'billing' | 'team' | 'profile';
@@ -31,6 +33,7 @@ interface SettingsProps {
 
 export const Settings: React.FC<SettingsProps> = ({ activeSection }) => {
     const [model, setModel] = useState<'gemini' | 'claude' | 'gpt4'>('gemini');
+    const [isSyncing, setIsSyncing] = useState(false);
     const [brandName, setBrandName] = useState('TaxGo');
     const [primaryColor, setPrimaryColor] = useState('#ffffff');
 
@@ -264,17 +267,85 @@ export const Settings: React.FC<SettingsProps> = ({ activeSection }) => {
                                 {[
                                     { name: "QuickBooks", desc: "Sync small business data", icon: "https://quickbooks.intuit.com/favicon.ico", status: "Connected" },
                                     { name: "IRS MeF", desc: "Modernized E-File API", icon: "https://www.irs.gov/favicon.ico", status: "Connected" },
-                                    { name: "Xero", desc: "Import accounting logs", icon: "https://www.xero.com/favicon.ico", status: "Not Setup" }
+                                    { name: "Xero", desc: "Import accounting logs", icon: "https://www.xero.com/favicon.ico", status: "Not Setup" },
+                                    {
+                                        name: "Slack",
+                                        desc: "Import feedback from channels",
+                                        icon: "https://a.slack-edge.com/80588/img/services/api_512.png",
+                                        status: import.meta.env.VITE_SLACK_TOKEN ? "Connected" : "Not Setup",
+                                        isSlack: true
+                                    }
                                 ].map((app, i) => (
                                     <div key={i} className="p-8 rounded-3xl bg-zinc-950 border border-zinc-800 flex flex-col gap-6 group hover:border-zinc-700 transition-all">
                                         <div className="flex items-center justify-between">
                                             <img src={app.icon} className="w-10 h-10 rounded shadow-lg" />
-                                            <span className="text-[9px] font-bold text-zinc-500 px-2 py-1 rounded bg-zinc-900 ">{app.status}</span>
+                                            <span className={cn(
+                                                "text-[9px] font-bold px-2 py-1 rounded bg-zinc-900",
+                                                app.status === "Connected" ? "text-green-500" : "text-zinc-500"
+                                            )}>{app.status}</span>
                                         </div>
                                         <div>
                                             <h4 className="font-bold text-white text-lg  tracking-tight">{app.name}</h4>
                                             <p className="text-xs text-zinc-500 mt-1  tracking-tighter opacity-70">{app.desc}</p>
                                         </div>
+                                        {app.isSlack && app.status === "Connected" && (
+                                            <div className="pt-4 border-t border-zinc-900 flex flex-col gap-3">
+                                                <div className="space-y-1">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase">Channel ID</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="C012345678"
+                                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-zinc-700"
+                                                        defaultValue={localStorage.getItem('slack_channel_id') || ''}
+                                                        onChange={(e) => localStorage.setItem('slack_channel_id', e.target.value)}
+                                                    />
+                                                </div>
+                                                <button
+                                                    disabled={isSyncing}
+                                                    onClick={async () => {
+                                                        const channelId = localStorage.getItem('slack_channel_id');
+                                                        if (!channelId) {
+                                                            alert('Please enter a Channel ID first');
+                                                            return;
+                                                        }
+                                                        setIsSyncing(true);
+                                                        try {
+                                                            const messages = await fetchSlackMessages(channelId);
+                                                            const existing = JSON.parse(localStorage.getItem('synced_feedback') || '[]');
+                                                            const newInsights = messages.map((m: any) => ({
+                                                                id: `slack-${m.ts}`,
+                                                                type: m.text.toLowerCase().includes('bug') ? 'bug' : 'feature',
+                                                                emoji: m.text.toLowerCase().includes('bug') ? '🛑' : '💬',
+                                                                title: m.text.slice(0, 40) + (m.text.length > 40 ? '...' : ''),
+                                                                summary: m.text,
+                                                                mentions: 1,
+                                                                users: [{ name: m.user, avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.user}` }],
+                                                                tags: ["Slack", "Imported"],
+                                                                evidence: [{
+                                                                    source: "Slack",
+                                                                    text: m.text,
+                                                                    time: new Date(parseFloat(m.ts) * 1000).toLocaleTimeString()
+                                                                }]
+                                                            }));
+                                                            localStorage.setItem('synced_feedback', JSON.stringify([...newInsights, ...existing]));
+                                                            alert(`Successfully synced ${messages.length} messages! Go to Triage Deck to see them.`);
+                                                        } catch (err: any) {
+                                                            alert(`Sync failed: ${err.message}`);
+                                                        } finally {
+                                                            setIsSyncing(false);
+                                                        }
+                                                    }}
+                                                    className="w-full py-2 bg-zinc-100 text-zinc-950 text-[10px] font-bold rounded-lg hover:bg-white transition-colors flex items-center justify-center gap-2 group disabled:opacity-50"
+                                                >
+                                                    {isSyncing ? 'Syncing...' : (
+                                                        <>
+                                                            <Slack size={12} className="group-hover:rotate-12 transition-transform" />
+                                                            Sync Messages
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
