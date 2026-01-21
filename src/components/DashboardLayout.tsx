@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     BarChart3,
@@ -50,13 +51,35 @@ const SidebarItem = ({ icon: Icon, label, active, onClick }: SidebarItemProps) =
 
 export const DashboardLayout: React.FC<{
     children: React.ReactNode,
-    activeTab: string,
-    onTabChange: (tab: string) => void,
-    settingsSection: string | null,
-    onSettingsSectionChange: (section: string | null) => void,
     xp?: number,
     streak?: number
-}> = ({ children, activeTab, onTabChange, settingsSection, onSettingsSectionChange, xp = 1450, streak = 5 }) => {
+}> = ({ children, xp = 1450, streak = 5 }) => {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Determine active tab from URL path
+    // Path structure: /{activeTab}/{settingsSection?}
+    const pathParts = location.pathname.split('/').filter(Boolean);
+    const activeTab = pathParts[0] || 'triage';
+    const settingsSection = activeTab === 'settings' ? (pathParts[1] || 'knowledge') : null;
+
+    const onTabChange = (tab: string) => {
+        if (tab === 'settings') {
+            navigate('/settings/knowledge');
+        } else {
+            navigate(`/${tab}`);
+        }
+    };
+
+    const onSettingsSectionChange = (section: string | null) => {
+        if (section) {
+            navigate(`/settings/${section}`);
+        } else {
+            // "Back" logic or clearing section
+            navigate('/triage');
+        }
+    };
+
     const [, setIsMobileMenuOpen] = useState(false);
     const [showGamification, setShowGamification] = useState(true);
     const [isHoveringGami, setIsHoveringGami] = useState(false);
